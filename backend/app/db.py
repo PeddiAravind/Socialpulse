@@ -47,3 +47,61 @@ def init_db():
             conn.commit()
         except Exception:
             pass
+
+    with SessionLocal() as session:
+        if session.query(Brand).first() is not None:
+            return
+
+        brand = Brand(
+            name="Hyderabad Brew House",
+            industry="Café & Hospitality",
+            business_description="Specialty artisanal coffee and bakery.",
+            target_audience="Coffee connoisseurs and students",
+            tone="Friendly & Conversational",
+            language="English",
+            location="Jubilee Hills, Hyderabad",
+            products_services="Cold brews, Pour-over, Croissants",
+            goals="Increase cafe visits and brand loyalty",
+        )
+        session.add(brand)
+        session.flush()
+
+        from backend.app.services import generate_synthetic_posts
+
+        synthetic_items = generate_synthetic_posts(brand_id=brand.id, count=50)
+        for item in synthetic_items:
+            metrics = item["metrics"]
+            post = Post(
+                brand_id=brand.id,
+                platform=item["platform"],
+                published_at=item["published_at"],
+                content_format=item["content_format"],
+                category=item["category"],
+                topic=item["topic"],
+                caption=item["caption"],
+                status=item["status"],
+                created_at=item["created_at"],
+                post_date=item["published_at"],
+                reach=metrics["reach"],
+                impressions=metrics["impressions"],
+                likes=metrics["likes"],
+                comments=metrics["comments"],
+                shares=metrics["shares"],
+                saves=metrics["saves"],
+            )
+            session.add(post)
+            session.flush()
+            session.add(PostMetrics(
+                post_id=post.id,
+                impressions=metrics["impressions"],
+                reach=metrics["reach"],
+                likes=metrics["likes"],
+                comments=metrics["comments"],
+                shares=metrics["shares"],
+                saves=metrics["saves"],
+                link_clicks=metrics["link_clicks"],
+                follower_growth=metrics["follower_growth"],
+                created_at=item["created_at"],
+            ))
+
+        session.commit()
